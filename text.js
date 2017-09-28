@@ -52,7 +52,7 @@ module.exports.sendText = function(phone, message, opts, cb) {
   var providers_list = providers[region];
 
   if (opts.provider) {
-    providers_list = opts.provider;
+    providers_list = [opts.provider];
   }
 
   var done = 0,
