@@ -1,24 +1,24 @@
 'use strict';
 
 var providers = require('./providers.json'),
-    spawn     = require('child_process').spawn;
+  spawn = require('child_process').spawn;
 
 var debugEnabled = false;
 var default_options = {
   fromAddr: 'textbelt@me.com',
   fromName: 'Textbelt',
-  subject:  '',
-  region:   'us'
-}
+  subject: '',
+  region: 'us'
+};
 
 /**
  * General purpose logging function, gated by a configurable value
  */
-var output = function () {
+var output = function() {
   if (debugEnabled) {
     return console.log.apply(this, arguments);
   }
-}
+};
 
 /**
  * Enable or disable debug output
@@ -27,10 +27,10 @@ var output = function () {
  *
  * @returns [bool] Whether debugging is enabled or not
  */
-module.exports.debug = function (enable) {
+module.exports.debug = function(enable) {
   debugEnabled = enable;
   return debugEnabled;
-}
+};
 
 /**
  * Sends a text message by sending emails to all providers
@@ -40,26 +40,30 @@ module.exports.debug = function (enable) {
  * @param [object] opts    - See readme
  * @param [func]   cb      - See readme
  */
-module.exports.sendText = function (phone, message, opts, cb) {
+module.exports.sendText = function(phone, message, opts, cb) {
   output('txting phone', phone, '\n + message:', message);
 
   // Setup options
   var fromAddr = opts.fromAddr ? opts.fromAddr : default_options.fromAddr;
   var fromName = opts.fromName ? opts.fromName : default_options.fromName;
-  var region   = opts.region   ? opts.region   : default_options.region;
-  var subject  = opts.subject  ? opts.subject  : default_options.subject;
+  var region = opts.region ? opts.region : default_options.region;
+  var subject = opts.subject ? opts.subject : default_options.subject;
 
   var providers_list = providers[region];
 
+  if (opts.provider) {
+    providers_list = opts.provider;
+  }
+
   var done = 0,
-      all  = providers_list.length;
+    all = providers_list.length;
 
   // Send email to all providers
-  providers_list.forEach(function (provider) {
+  providers_list.forEach(function(provider) {
     // Create/get email and headers
     var email = provider.replace('%s', phone);
-    var headers =  'Subject: ' + subject + '\r\n';
-        headers += 'From: ' + fromName + ' <' + fromAddr + '>\r\n\r\n';
+    var headers = 'Subject: ' + subject + '\r\n';
+    headers += 'From: ' + fromName + ' <' + fromAddr + '>\r\n\r\n';
 
     var child = spawn('sendmail', ['-f', fromAddr, email]);
 
@@ -67,13 +71,13 @@ module.exports.sendText = function (phone, message, opts, cb) {
     child.stdout.on('data', output);
     child.stderr.on('data', output);
 
-    child.on('error', function (err) {
+    child.on('error', function(err) {
       output('sendmail failed', { email: email, err: err });
       done++;
       if (done == all && cb) cb(false);
     });
 
-    child.on('exit', function () {
+    child.on('exit', function() {
       done++;
       if (done == all && cb) cb(false);
     });
@@ -82,4 +86,4 @@ module.exports.sendText = function (phone, message, opts, cb) {
     child.stdin.write(headers + message + '\n.');
     child.stdin.end();
   });
-}
+};
